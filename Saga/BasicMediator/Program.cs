@@ -1,6 +1,5 @@
-using BasicRabbitMQ.Components.Consumers;
-using BasicRabbitMQ.Contracts;
 using MassTransit;
+using Saga.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 

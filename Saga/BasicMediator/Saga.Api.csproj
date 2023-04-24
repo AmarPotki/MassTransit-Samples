@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BasicMediator.Components\BasicRabbitMQ.Components.csproj" />
+    <ProjectReference Include="..\BasicMediator.Components\Saga.Components.csproj" />
   </ItemGroup>
 
 </Project>

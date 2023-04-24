@@ -1,9 +1,9 @@
-using BasicRabbitMQ.Components.Consumers;
-using BasicRabbitMQ.Contracts;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
+using Saga.Components.Consumers;
+using Saga.Contracts;
 
-namespace BasicRabbitMQ.Api.Controllers
+namespace Saga.Api.Controllers
 {
     [ApiController]
     [Route("[controller]")]

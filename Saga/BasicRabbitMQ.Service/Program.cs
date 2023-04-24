@@ -1,9 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using BasicRabbitMQ.Components.Consumers;
 using MassTransit;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Saga.Components.Consumers;
+using Saga.Components.StateMachines;
 
 Console.WriteLine("Hello, World!");
 
@@ -42,7 +43,10 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
             services.AddMassTransit(x =>
             {
                 x.AddConsumersFromNamespaceContaining<SubmitOrderConsumer>();
-
+                x.AddSagaStateMachine<OrderStateMachine, OrderState>().RedisRepository(rs =>
+                {
+                    rs.DatabaseConfiguration("192.168.112.110:6379,password=UldaaGNtUmhRREl4UUVSbGRrOXdjMEE1T1RnPQ==");
+                });
                 x.SetKebabCaseEndpointNameFormatter();
                 x.UsingRabbitMq((context, cfg) =>
                 {
