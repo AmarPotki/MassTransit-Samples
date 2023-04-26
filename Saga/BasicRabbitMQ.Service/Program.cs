@@ -55,10 +55,12 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
                     cfg.Host("rabbitmq://rabbitmq:rabbitmq@192.168.112.110:5672");
 
 
-                    //cfg.ReceiveEndpoint("submit-order_error_skipped", e =>
-                    //{
-                    //    e.ConfigureConsumer<DashboardFaultConsumer>(context);
-                    //});
+                    cfg.ReceiveEndpoint("submit-order-error", e =>
+                    {
+                        e.Consumer<DashboardFaultConsumer>(context);
+                      //  e.Consumer<SubmitOrderConsumer>(context);
+
+                    });
                 });
                 x.AddConfigureEndpointsCallback((_, _, cfg) =>
                 {
