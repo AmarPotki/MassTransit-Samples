@@ -18,6 +18,15 @@ namespace Saga.Api.Controllers
             _logger = logger;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Get(Guid id, [FromServices] IRequestClient<CheckOrder> client)
+        {
+            var (status, notFound) = await client.GetResponse<OrderStatus, OrderNotFound>(new CheckOrder(id));
+            if (status.IsCompletedSuccessfully)
+                return Ok((await status).Message);
+            return NotFound(id);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post([FromServices] IRequestClient<SubmitOrder> client, [FromBody] SubmitOrder submitOrder)
         {
@@ -30,8 +39,8 @@ namespace Saga.Api.Controllers
         [HttpPut]
         public async Task<IActionResult> Put([FromServices] ISendEndpointProvider client, [FromBody] SubmitOrder submitOrder)
         {
-            var endpoint =await client.GetSendEndpoint(new Uri($"exchange:{KebabCaseEndpointNameFormatter.Instance.Consumer<SubmitOrderConsumer>()}"));
-            var endpoint2 =await client.GetSendEndpoint(new Uri("exchange:submit-order"));
+            var endpoint = await client.GetSendEndpoint(new Uri($"exchange:{KebabCaseEndpointNameFormatter.Instance.Consumer<SubmitOrderConsumer>()}"));
+            var endpoint2 = await client.GetSendEndpoint(new Uri("exchange:submit-order"));
             await endpoint.Send<SubmitOrder>(submitOrder);
             return Accepted();
 
@@ -41,6 +50,13 @@ namespace Saga.Api.Controllers
         public async Task<IActionResult> Patch([FromServices] IPublishEndpoint client, [FromBody] SubmitOrder submitOrder)
         {
             await client.Publish<SubmitOrder>(submitOrder);
+            return Accepted();
+
+        }
+        [HttpOptions]
+        public async Task<IActionResult> Options([FromServices] IPublishEndpoint client, [FromBody] ExceptionEvent exceptionEvent)
+        {
+            await client.Publish<ExceptionEvent>(exceptionEvent);
             return Accepted();
 
         }

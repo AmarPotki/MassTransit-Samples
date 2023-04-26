@@ -20,6 +20,7 @@ builder.Services.AddMassTransit(cfg =>
     });
 
     cfg.AddRequestClient<SubmitOrder>();
+    cfg.AddRequestClient<CheckOrder>();
   
 
 

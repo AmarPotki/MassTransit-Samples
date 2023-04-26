@@ -19,6 +19,12 @@ public class SubmitOrderConsumer : IConsumer<SubmitOrder>
     }
     public async Task Consume(ConsumeContext<SubmitOrder> context)
     {
+
+        if (context.Message.CustomerNumber == "exception")
+        {
+            throw new Exception("SubmitOrder exception");
+        }
+
         _logger?.Log(LogLevel.Trace, "SubmitOrderConsumer: {CustomerNumber}", context.Message.CustomerNumber);
         if (context.RequestId is not null)
         {

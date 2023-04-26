@@ -43,6 +43,7 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
             services.AddMassTransit(x =>
             {
                 x.AddConsumersFromNamespaceContaining<SubmitOrderConsumer>();
+               
                 x.AddSagaStateMachine<OrderStateMachine, OrderState>().RedisRepository(rs =>
                 {
                     rs.DatabaseConfiguration("192.168.112.110:6379,password=UldaaGNtUmhRREl4UUVSbGRrOXdjMEE1T1RnPQ==");
@@ -52,12 +53,18 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
                 {
                     cfg.ConfigureEndpoints(context);
                     cfg.Host("rabbitmq://rabbitmq:rabbitmq@192.168.112.110:5672");
-                  
-                    //cfg.ReceiveEndpoint(KebabCaseEndpointNameFormatter.Instance.Consumer<SubmitOrderConsumer>(), ep =>
-                    // {
-                    //     ep.Consumer<SubmitOrderConsumer>();
 
-                    // });
+
+                    //cfg.ReceiveEndpoint("submit-order_error_skipped", e =>
+                    //{
+                    //    e.ConfigureConsumer<DashboardFaultConsumer>(context);
+                    //});
+                });
+                x.AddConfigureEndpointsCallback((_, _, cfg) =>
+                {
+
+                    cfg.UseMessageRetry(r => r.Interval(1, 1000));
+
                 });
             });
         });
