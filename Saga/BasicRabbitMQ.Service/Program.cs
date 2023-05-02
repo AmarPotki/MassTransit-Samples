@@ -44,10 +44,11 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
             {
                 x.AddConsumersFromNamespaceContaining<SubmitOrderConsumer>();
                
-                x.AddSagaStateMachine<OrderStateMachine, OrderState>().RedisRepository(rs =>
-                {
-                    rs.DatabaseConfiguration("192.168.112.110:6379,password=UldaaGNtUmhRREl4UUVSbGRrOXdjMEE1T1RnPQ==");
-                });
+                x.AddSagaStateMachine<OrderStateMachine, OrderState>().InMemoryRepository();
+                //    .RedisRepository(rs =>
+                //{
+                //    rs.DatabaseConfiguration("192.168.112.110:6379,password=UldaaGNtUmhRREl4UUVSbGRrOXdjMEE1T1RnPQ==");
+                //});
                 x.SetKebabCaseEndpointNameFormatter();
                 x.UsingRabbitMq((context, cfg) =>
                 {

@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using Saga.Components.StateMachines.Activities;
 using Saga.Contracts;
 
 namespace Saga.Components.StateMachines;
@@ -20,9 +21,13 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
             }));
 
 
-            Event(() => ExceptionEvent, m
-                => m.CorrelateById(c => c.Message.OrderId));
+         
         });
+        Event(() => ExceptionEvent, m
+            => m.CorrelateById(c => c.Message.OrderId));   
+        
+        Event(() => OrderAcceptedEvent, m
+            => m.CorrelateById(c => c.Message.OrderId));
 
         Event(() => ExceptionEventFaulted, x =>
         {
@@ -30,28 +35,48 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
                 .CorrelateById(m => m.Message.Message.OrderId) // Fault<T> includes the original message
                 .SelectId(m => m.Message.Message.OrderId);
         });
- 
+        //does not work in redis, just work database that have support query (sqlserver, mangodb,martin,...)
+        Event(() => CustomerAccountClosedEvent, m
+            => m.CorrelateBy((saga, context) => saga.CustomerNumber == context.Message.CustomerNumber));
 
 
 
-    InstanceState(c => c.CurrentState);
-        Initially(When(OrderSubmitted).TransitionTo(Submitted));
+        InstanceState(c => c.CurrentState);
+        Initially(When(OrderSubmitted).Then(context =>
+        {
+            context.Saga.CustomerNumber = context.Message.CustomerNumber;
+            context.Saga.PaymentCardNumber = context.Message.PaymentCardNumber;
+        }).TransitionTo(Submitted));
+
+
+        During(Submitted, When(OrderAcceptedEvent)
+            .Activity(x =>
+            x.OfType<AcceptOrderActivity>()).TransitionTo(Accepted));
 
         // an option to handle duplicate request
-        During(Submitted, When(OrderSubmitted).Then(context =>
+        During(Submitted,
+            When(OrderSubmitted)
+                .Then(context =>
         {
-            LogContext.Info?.Log($"duplicated: {context.Message.CustomerNumber}"
-            );
+            LogContext.Info?.Log($"duplicated: {context.Message.CustomerNumber}");
         }), Ignore(OrderSubmitted));
 
         // other option to handle duplicate request
-        DuringAny(When(OrderSubmitted)
-            .Then(context =>
-        {
-            //update a field so called update time 
-            LogContext.Info?.Log($"duplicated: {context.Message.CustomerNumber}"
-            );
-        }), Ignore(OrderSubmitted));
+        //DuringAny(When(OrderSubmitted)
+        //    .Then(context =>
+        //{
+        //    //update a field so called update time 
+        //    LogContext.Info?.Log($"duplicated: {context.Message.CustomerNumber}"
+        //    );
+        //}), Ignore(OrderSubmitted));
+
+
+        During(Submitted,
+            When(CustomerAccountClosedEvent)
+                .Then(context =>
+                {
+                    LogContext.Info?.Log($"duplicated: {context.Message.CustomerNumber}");
+                }).TransitionTo(Canceled));
 
         DuringAny(When(CheckOrderEvent).Then(context =>
         {
@@ -70,16 +95,19 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
         {
             //update a field so called update time 
             LogContext.Info?.Log($"ExceptionEventFaulted receive: {context.Message.Message.OrderId}");
-          
+
         }));
 
 
     }
     public State Submitted { get; set; }
+    public State Accepted { get; set; }
+    public State Canceled { get; set; }
     public Event<OrderSubmitted> OrderSubmitted { get; set; }
     public Event<CheckOrder> CheckOrderEvent { get; set; }
+    public Event<OrderAccepted> OrderAcceptedEvent { get; set; }
+    public Event<CustomerAccountClosed> CustomerAccountClosedEvent { get; set; }
     public Event<ExceptionEvent> ExceptionEvent { get; set; }
-
     public Event<Fault<ExceptionEvent>> ExceptionEventFaulted { get; private set; }
 }
 

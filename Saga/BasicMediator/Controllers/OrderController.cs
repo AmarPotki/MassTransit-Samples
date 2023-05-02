@@ -60,5 +60,13 @@ namespace Saga.Api.Controllers
             return Accepted();
 
         }
+        [HttpPost]
+        [Route("OrderAccepted")]
+        public async Task<IActionResult> OrderAccepted([FromServices] IPublishEndpoint client, [FromBody] OrderAccepted orderAccepted)
+        {
+            await client.Publish<OrderAccepted>(orderAccepted);
+            return Accepted();
+
+        }
     }
 }
