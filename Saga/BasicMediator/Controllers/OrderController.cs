@@ -68,5 +68,13 @@ namespace Saga.Api.Controllers
             return Accepted();
 
         }
+        [HttpPost]
+        [Route("DelayOrder")]
+        public async Task<IActionResult> OrderAccepted([FromServices] IMessageScheduler client, [FromBody] OrderDelayed orderDelayed)
+        {
+            await client.SchedulePublish<OrderDelayed>(orderDelayed.DeliveryTime,orderDelayed);
+            return Accepted();
+
+        }
     }
 }

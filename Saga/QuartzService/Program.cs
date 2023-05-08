@@ -1,6 +1,6 @@
 using MassTransit;
 using Quartz;
-using Saga.Contracts;
+using QuartzService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,22 +10,6 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddMassTransit(cfg =>
-{
-    cfg.SetKebabCaseEndpointNameFormatter();
-    cfg.AddPublishMessageScheduler();
-    cfg.AddQuartzConsumers();
-    cfg.UsingRabbitMq((context, c) =>
-    {
-        c.UsePublishMessageScheduler();
-        c.Host("rabbitmq://rabbitmq:rabbitmq@192.168.112.110:5672");
-        c.ConfigureEndpoints(context);
-    });
-
-    cfg.AddRequestClient<SubmitOrder>();
-    cfg.AddRequestClient<CheckOrder>();
-
-});
 builder.Services.AddQuartz(q =>
 {
     q.SchedulerName = "MassTransit-Scheduler";
@@ -57,13 +41,34 @@ builder.Services.AddQuartz(q =>
     });
 });
 
-
-builder.Host.ConfigureLogging((_, logging) =>
+builder.Services.AddMassTransit(x =>
 {
-    logging.AddConsole();
+    x.AddPublishMessageScheduler();
 
-    logging.SetMinimumLevel(LogLevel.Trace);
+    x.AddQuartzConsumers();
+
+    x.AddConsumer<SampleConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.UsePublishMessageScheduler();
+        cfg.Host("rabbitmq://rabbitmq:rabbitmq@192.168.112.110:5672");
+        cfg.ConfigureEndpoints(context);
+    });
 });
+
+builder.Services.Configure<MassTransitHostOptions>(options =>
+{
+    options.WaitUntilStarted = true;
+});
+
+builder.Services.AddQuartzHostedService(options =>
+{
+    options.StartDelay = TimeSpan.FromSeconds(5);
+    options.WaitForJobsToComplete = true;
+});
+
+builder.Services.AddHostedService<SuperWorker>();
 
 var app = builder.Build();
 

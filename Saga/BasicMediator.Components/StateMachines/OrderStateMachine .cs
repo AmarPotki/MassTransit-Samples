@@ -21,11 +21,14 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
             }));
 
 
-         
+
         });
         Event(() => ExceptionEvent, m
-            => m.CorrelateById(c => c.Message.OrderId));   
+            => m.CorrelateById(c => c.Message.OrderId));      
         
+        Event(() => OrderDelayedEvent, m
+            => m.CorrelateById(c => c.Message.OrderId));
+
         Event(() => OrderAcceptedEvent, m
             => m.CorrelateById(c => c.Message.OrderId));
 
@@ -75,8 +78,15 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
             When(CustomerAccountClosedEvent)
                 .Then(context =>
                 {
-                    LogContext.Info?.Log($"duplicated: {context.Message.CustomerNumber}");
+                    LogContext.Info?.Log($"cancel: {context.Message.CustomerNumber}");
                 }).TransitionTo(Canceled));
+
+        During(Submitted,
+            When(OrderDelayedEvent)
+                .Then(context =>
+                {
+                    LogContext.Info?.Log($"Delayed for: {context.Message.DeliveryTime.ToShortDateString()}");
+                }).TransitionTo(Delayed));
 
         DuringAny(When(CheckOrderEvent).Then(context =>
         {
@@ -103,9 +113,11 @@ public class OrderStateMachine : MassTransitStateMachine<OrderState>
     public State Submitted { get; set; }
     public State Accepted { get; set; }
     public State Canceled { get; set; }
+    public State Delayed { get; set; }
     public Event<OrderSubmitted> OrderSubmitted { get; set; }
     public Event<CheckOrder> CheckOrderEvent { get; set; }
     public Event<OrderAccepted> OrderAcceptedEvent { get; set; }
+    public Event<OrderDelayed> OrderDelayedEvent { get; set; }
     public Event<CustomerAccountClosed> CustomerAccountClosedEvent { get; set; }
     public Event<ExceptionEvent> ExceptionEvent { get; set; }
     public Event<Fault<ExceptionEvent>> ExceptionEventFaulted { get; private set; }
