@@ -3,6 +3,7 @@
 using MassTransit;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Quartz;
 using Saga.Components.Consumers;
 using Saga.Components.StateMachines;
 
@@ -50,11 +51,13 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
                 //    rs.DatabaseConfiguration("192.168.112.110:6379,password=UldaaGNtUmhRREl4UUVSbGRrOXdjMEE1T1RnPQ==");
                 //});
                 x.SetKebabCaseEndpointNameFormatter();
+                x.AddPublishMessageScheduler();
+                x.AddQuartzConsumers();
                 x.UsingRabbitMq((context, cfg) =>
                 {
                     cfg.ConfigureEndpoints(context);
                     cfg.Host("rabbitmq://rabbitmq:rabbitmq@192.168.112.110:5672");
-
+                    cfg.UsePublishMessageScheduler();
 
                     cfg.ReceiveEndpoint("submit-order-error", e =>
                     {
@@ -68,6 +71,36 @@ static IHostBuilder CreateHostBuilder(string[] args) =>
 
                     cfg.UseMessageRetry(r => r.Interval(1, 1000));
 
+                });
+            });
+            services.AddQuartz(q =>
+            {
+                q.SchedulerName = "MassTransit-Scheduler";
+                q.SchedulerId = "AUTO";
+
+                q.UseMicrosoftDependencyInjectionJobFactory();
+
+                q.UseDefaultThreadPool(tp =>
+                {
+                    tp.MaxConcurrency = 10;
+                });
+
+                q.UseTimeZoneConverter();
+
+                q.UsePersistentStore(s =>
+                {
+                    s.UseProperties = true;
+                    s.RetryInterval = TimeSpan.FromSeconds(15);
+
+                    s.UseSqlServer("Server=192.168.10.140;Database=QuartzService;User Id=sa;Password=***;MultipleActiveResultSets=true;Persist Security Info=False;Encrypt=False;TrustServerCertificate=True;");
+
+                    s.UseJsonSerializer();
+
+                    s.UseClustering(c =>
+                    {
+                        c.CheckinMisfireThreshold = TimeSpan.FromSeconds(20);
+                        c.CheckinInterval = TimeSpan.FromSeconds(10);
+                    });
                 });
             });
         });

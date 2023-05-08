@@ -13,4 +13,7 @@ public class OrderState :
     public string FaultReason { get; set; }
     public Guid CorrelationId { get; set; }
     public int Version { get; set; }
+    //for scheduling
+    public Guid? HoldDurationToken { get; set; }
+
 }
