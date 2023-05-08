@@ -29,7 +29,7 @@ builder.Services.AddQuartz(q =>
         s.UseProperties = true;
         s.RetryInterval = TimeSpan.FromSeconds(15);
 
-        s.UseSqlServer("Server=192.168.10.140;Database=QuartzService;User Id=sa;Password=Ai@123456;MultipleActiveResultSets=true;Persist Security Info=False;Encrypt=False;TrustServerCertificate=True;");
+        s.UseSqlServer("Server=192.168.10.140;Database=QuartzService;User Id=sa;Password=***;MultipleActiveResultSets=true;Persist Security Info=False;Encrypt=False;TrustServerCertificate=True;");
 
         s.UseJsonSerializer();
 
